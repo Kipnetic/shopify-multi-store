@@ -1,0 +1,17 @@
+# Railway deploy for the hosted connector (docs/HOSTED.md, "Setup on any server").
+# Single instance only: the file store in /data is for one process, and Railway
+# does not allow replicas on a service with a volume.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Railway mounts the /data volume owned by root, and the image runs as `node`.
+# The service sets RAILWAY_RUN_UID=0 so this starts as root, hands /data to
+# `node`, then drops to `node` before the server reads any secret or request.
+startCommand = "sh -c 'chown -R node:node /data && exec setpriv --reuid=node --regid=node --init-groups node scripts/cli.mjs serve'"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1
